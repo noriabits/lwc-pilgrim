@@ -1,0 +1,70 @@
+<template>
+  <c-pilgrim-flow
+    show-progress
+    progress-type="base"
+    done-label="Submit Request"
+    onstepchange={handleStepChange}
+    onpilgrimdatachange={handleFlowDataChange}
+    oncomplete={handleComplete}
+  >
+    <!-- Step 1: always shown -->
+    <c-pilgrim-step label="Contact" name="contact" valid={contactValid}>
+      <div class="slds-text-heading_small slds-p-bottom_small">
+        Contact details
+      </div>
+      <lightning-input
+        label="Full name"
+        value={data.fullName}
+        data-key="fullName"
+        onchange={handleField}
+        required
+      ></lightning-input>
+      <lightning-input
+        type="email"
+        label="Email"
+        value={data.email}
+        data-key="email"
+        onchange={handleField}
+        required
+      ></lightning-input>
+      <lightning-input
+        type="checkbox"
+        label="Needs a billing account"
+        checked={data.needsBilling}
+        data-key="needsBilling"
+        onchange={handleField}
+      ></lightning-input>
+    </c-pilgrim-step>
+
+    <!-- Step 2: skipped unless the checkbox above is ticked -->
+    <c-pilgrim-step
+      label="Billing"
+      name="billing"
+      hidden={skipBilling}
+      valid={billingValid}
+    >
+      <div class="slds-text-heading_small slds-p-bottom_small">Billing</div>
+      <lightning-combobox
+        label="Billing account"
+        value={data.billingAccountId}
+        options={billingOptions}
+        data-key="billingAccountId"
+        onchange={handleField}
+        required
+      ></lightning-combobox>
+    </c-pilgrim-step>
+
+    <!-- Step 3: read-only summary -->
+    <c-pilgrim-step label="Review" name="review">
+      <div class="slds-text-heading_small slds-p-bottom_small">Review</div>
+      <dl class="slds-dl_horizontal">
+        <dt class="slds-dl_horizontal__label">Name</dt>
+        <dd class="slds-dl_horizontal__detail">{data.fullName}</dd>
+        <dt class="slds-dl_horizontal__label">Email</dt>
+        <dd class="slds-dl_horizontal__detail">{data.email}</dd>
+        <dt class="slds-dl_horizontal__label">Billing account</dt>
+        <dd class="slds-dl_horizontal__detail">{billingAccountLabel}</dd>
+      </dl>
+    </c-pilgrim-step>
+  </c-pilgrim-flow>
+</template>

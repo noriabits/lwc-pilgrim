@@ -1,0 +1,7 @@
+.pilgrim-flow {
+  display: block;
+}
+
+.pilgrim-flow__body {
+  min-height: 4rem;
+}

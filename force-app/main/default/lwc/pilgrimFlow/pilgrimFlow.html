@@ -1,0 +1,58 @@
+<template>
+  <div class="slds-card slds-p-around_medium pilgrim-flow">
+    <template if:true={showProgress}>
+      <div class="slds-p-bottom_medium pilgrim-flow__progress">
+        <lightning-progress-indicator
+          current-step={currentStepValue}
+          type={progressType}
+        >
+          <template for:each={progressSteps} for:item="step">
+            <lightning-progress-step
+              key={step.value}
+              label={step.label}
+              value={step.value}
+            ></lightning-progress-step>
+          </template>
+        </lightning-progress-indicator>
+      </div>
+    </template>
+
+    <div class="pilgrim-flow__body">
+      <slot></slot>
+    </div>
+
+    <div
+      class="slds-grid slds-grid_align-spread slds-p-top_medium pilgrim-flow__footer"
+    >
+      <div>
+        <template if:true={showBack}>
+          <lightning-button
+            label={backLabel}
+            onclick={handleBack}
+            class="pilgrim-flow__back"
+          ></lightning-button>
+        </template>
+      </div>
+      <div>
+        <template if:true={showNext}>
+          <lightning-button
+            variant="brand"
+            label={nextLabel}
+            disabled={nextDisabled}
+            onclick={handleNext}
+            class="pilgrim-flow__next"
+          ></lightning-button>
+        </template>
+        <template if:true={showDone}>
+          <lightning-button
+            variant="brand"
+            label={doneLabel}
+            disabled={nextDisabled}
+            onclick={handleDone}
+            class="pilgrim-flow__done"
+          ></lightning-button>
+        </template>
+      </div>
+    </div>
+  </div>
+</template>
