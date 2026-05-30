@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="lwc_pilgrim_banner.svg" alt="Pilgrim Flow — LWC Multi-Step Wizard Framework" width="100%" />
+</div>
+
 # lwc-pilgrim
 
 A purposeful journey through stages. A reusable multi-step wizard framework built in **vanilla LWC**. Implementors compose guided experiences declaratively; the framework owns navigation, progress indication, validation gating, and conditional steps.
@@ -129,7 +133,7 @@ sf lightning dev component --name pilgrimFlowDemo -o <org-alias>
 ## Tests
 
 ```bash
-npm run test:unit   # Jest (Node 22 LTS recommended)
+npm run test:unit
 npm run lint
 npm run prettier
 ```
