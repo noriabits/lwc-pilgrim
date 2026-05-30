@@ -33,17 +33,17 @@ Thin wrapper the implementor places around each screen's content. Registers itse
 | `label`  | String  | —       | Text shown in the progress indicator.                                              |
 | `name`   | String  | —       | Stable key for navigation and `stepchange` events.                                 |
 | `valid`  | Boolean | `true`  | When `false`, blocks Next/Done on this step.                                       |
-| `hidden` | Boolean | `false` | When `true`, step is skipped in navigation and absent from the progress indicator. |
+| `skip`   | Boolean | `false` | When `true`, step is skipped in navigation and absent from the progress indicator. |
 | `active` | Boolean | `false` | Read-only in practice; set by the flow via `setActive()` callback.                 |
 
 **Internal events dispatched** (bubbles + composed — consumed by `c-pilgrim-flow`, not the host):
 
-| Event                   | When                                                 |
-| ----------------------- | ---------------------------------------------------- |
-| `pilgrimstepregister`   | `connectedCallback` — detail: `{ step, setActive }`  |
-| `pilgrimstepunregister` | `disconnectedCallback` — detail: `{ step }`          |
-| `pilgrimstepvalidity`   | `valid` setter changes — detail: `{ step, valid }`   |
-| `pilgrimstepvisibility` | `hidden` setter changes — detail: `{ step, hidden }` |
+| Event                   | When                                                      |
+| ----------------------- | --------------------------------------------------------- |
+| `pilgrimstepregister`   | `connectedCallback` — detail: `{ step: POJO, setActive }` |
+| `pilgrimstepunregister` | `disconnectedCallback` — detail: `{ uid }`                |
+| `pilgrimstepvalidity`   | `valid` setter changes — detail: `{ uid, valid }`         |
+| `pilgrimstepvisibility` | `skip` setter changes — detail: `{ uid, skip }`           |
 
 > **Note on unregister:** events dispatched during `disconnectedCallback` don't bubble to ancestors (element already removed from DOM). For v1 static-slot usage this is irrelevant; dynamic step removal is a v2 concern.
 
@@ -75,9 +75,9 @@ Owns the ordered step registry, active index, shared `flowData` context, and ren
 
 **Navigation rules:**
 
-- Back/Next/Done operate over `visibleSteps` (steps where `hidden !== true`).
+- Back/Next/Done operate over `visibleSteps` (steps where `skip !== true`).
 - Next and Done are `disabled` while `activeStep.valid === false`.
-- If the active step becomes `hidden`, the flow falls back to the first visible step.
+- If the active step becomes `skip`, the flow falls back to the first visible step.
 
 ---
 
@@ -154,7 +154,7 @@ When `valid` is `false` the Next/Done button is disabled.
     <c-pilgrim-step
       label="Billing"
       name="billing"
-      hidden="{skipBilling}"
+      skip="{skipBilling}"
       valid="{billingValid}"
     >
       <lightning-combobox
@@ -224,7 +224,7 @@ Test files live in `__tests__/` inside each component folder and use `@salesforc
 npm run test:unit
 ```
 
-**Known jest quirk:** When a test assertion fails and the received/expected value is an LWC element proxy, Jest's `deepCyclicCopyReplaceable` recurses infinitely and OOMs. Workaround: never use `expect(lwcElement).toEqual(...)` or `expect(lwcElement).toBe(...)` directly — compare primitive properties instead (e.g. `expect(detail.step.name).toBe('one')`). Also use `element.className` (string) instead of `element.classList` (DOMTokenList) for class assertions.
+The `pilgrimstepregister` event detail now carries a plain POJO (`{ uid, name, label, valid, skip }`) instead of the LWC element reference, so `expect(detail.step).toEqual(...)` is safe in tests. Use `element.className` (string) instead of `element.classList` (DOMTokenList) for class assertions.
 
 Tests for `pilgrimStep` also cover an event-bubbling edge case: `pilgrimstepunregister` events dispatched from `disconnectedCallback` don't bubble to `document.body` (element is already removed from DOM). Listen on the element itself in tests.
 
@@ -241,7 +241,7 @@ sf project deploy start \
 
 Then open Lightning App Builder and drop **Pilgrim Flow Demo** onto a page.
 
-## Local dev preview (no deploy needed)
+## Local dev preview
 
 ```bash
 sf lightning dev component --name pilgrimFlowDemo -o <org-alias>
@@ -267,3 +267,8 @@ First run prompts to enable Local Dev in the org (one-time). Supports hot reload
 - Server persistence on Done — host handles via the `complete` event.
 - Cancel button — add `show-cancel` prop + `cancel` event.
 - Step-level error messages when Next is blocked (currently only button is disabled).
+
+## Dev instructions
+
+- Once a change is completed, suggest the commit message.
+- Update CLAUDE.md whenever is needed.

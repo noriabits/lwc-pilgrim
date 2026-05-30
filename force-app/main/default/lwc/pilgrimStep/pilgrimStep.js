@@ -1,28 +1,11 @@
-import { LightningElement, api } from "lwc";
+import { LightningElement, api, track } from "lwc";
 
-/**
- * @class PilgrimStep
- * @extends LightningElement
- *
- * @classdesc
- * A single screen inside a `c-pilgrim-flow`. The implementor places their own
- * content as children; this wrapper exposes it through a default `<slot>` and
- * toggles visibility so step state survives navigation (content stays in the DOM).
- *
- * Steps register themselves with the parent `c-pilgrim-flow` on connect using the
- * same bubbling-event handshake `lightning-tab` uses with `lightning-tabset`.
- */
 export default class PilgrimStep extends LightningElement {
-  /** Text shown in the progress indicator / step header. */
   @api label;
-
-  /** Stable key used by the flow for navigation and the progress `current-step`. */
   @api name;
 
-  // --- validity (drives the flow's Next/Done gate) ---
   _valid = true;
 
-  /** Whether this step is currently valid. Default `true`. */
   @api
   get valid() {
     return this._valid;
@@ -32,23 +15,21 @@ export default class PilgrimStep extends LightningElement {
     this.notifyValidity();
   }
 
-  // --- conditional step ---
-  _hidden = false;
+  _skip = false;
 
   /** When `true` the step is skipped in navigation and the progress indicator. */
   @api
-  get hidden() {
-    return this._hidden;
+  get skip() {
+    return this._skip;
   }
-  set hidden(value) {
-    this._hidden = value === true || value === "true";
+  set skip(value) {
+    this._skip = value === true || value === "true";
     this.notifyVisibility();
   }
 
-  // --- active state (controlled by the parent flow) ---
-  _active = false;
+  // @track so the setActive callback (which bypasses the @api setter) triggers re-renders
+  @track _active = false;
 
-  /** Whether this step is the one currently displayed. Set by `c-pilgrim-flow`. */
   @api
   get active() {
     return this._active;
@@ -62,12 +43,19 @@ export default class PilgrimStep extends LightningElement {
   }
 
   connectedCallback() {
+    this._descriptor = {
+      uid: null,
+      name: this.name,
+      label: this.label,
+      valid: this._valid,
+      skip: this._skip
+    };
     this.dispatchEvent(
       new CustomEvent("pilgrimstepregister", {
         bubbles: true,
         composed: true,
         detail: {
-          step: this,
+          step: this._descriptor,
           setActive: (isActive) => {
             this._active = isActive === true;
           }
@@ -81,27 +69,29 @@ export default class PilgrimStep extends LightningElement {
       new CustomEvent("pilgrimstepunregister", {
         bubbles: true,
         composed: true,
-        detail: { step: this }
+        detail: { uid: this._descriptor?.uid }
       })
     );
   }
 
   notifyValidity() {
+    if (!this._descriptor) return;
     this.dispatchEvent(
       new CustomEvent("pilgrimstepvalidity", {
         bubbles: true,
         composed: true,
-        detail: { step: this, valid: this._valid }
+        detail: { uid: this._descriptor.uid, valid: this._valid }
       })
     );
   }
 
   notifyVisibility() {
+    if (!this._descriptor) return;
     this.dispatchEvent(
       new CustomEvent("pilgrimstepvisibility", {
         bubbles: true,
         composed: true,
-        detail: { step: this, hidden: this._hidden }
+        detail: { uid: this._descriptor.uid, skip: this._skip }
       })
     );
   }

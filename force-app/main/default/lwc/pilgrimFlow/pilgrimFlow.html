@@ -1,7 +1,10 @@
 <template>
   <div class="slds-card slds-p-around_medium pilgrim-flow">
-    <template if:true={showProgress}>
-      <div class="slds-p-bottom_medium pilgrim-flow__progress">
+    <template lwc:if={showProgress}>
+      <div
+        class="slds-p-bottom_medium pilgrim-flow__progress"
+        aria-label="Step progress"
+      >
         <lightning-progress-indicator
           current-step={currentStepValue}
           type={progressType}
@@ -17,15 +20,21 @@
       </div>
     </template>
 
-    <div class="pilgrim-flow__body">
+    <span class="slds-assistive-text" aria-live="polite"
+      >{activeStepLabel}</span
+    >
+
+    <div class="pilgrim-flow__body" tabindex="-1">
       <slot></slot>
     </div>
 
     <div
       class="slds-grid slds-grid_align-spread slds-p-top_medium pilgrim-flow__footer"
+      role="navigation"
+      aria-label="Wizard navigation"
     >
       <div>
-        <template if:true={showBack}>
+        <template lwc:if={showBack}>
           <lightning-button
             label={backLabel}
             onclick={handleBack}
@@ -34,23 +43,25 @@
         </template>
       </div>
       <div>
-        <template if:true={showNext}>
-          <lightning-button
-            variant="brand"
-            label={nextLabel}
-            disabled={nextDisabled}
-            onclick={handleNext}
-            class="pilgrim-flow__next"
-          ></lightning-button>
-        </template>
-        <template if:true={showDone}>
-          <lightning-button
-            variant="brand"
-            label={doneLabel}
-            disabled={nextDisabled}
-            onclick={handleDone}
-            class="pilgrim-flow__done"
-          ></lightning-button>
+        <template lwc:if={showFooterActions}>
+          <template lwc:if={showNext}>
+            <lightning-button
+              variant="brand"
+              label={nextLabel}
+              disabled={nextDisabled}
+              onclick={handleNext}
+              class="pilgrim-flow__next"
+            ></lightning-button>
+          </template>
+          <template lwc:else>
+            <lightning-button
+              variant="brand"
+              label={doneLabel}
+              disabled={nextDisabled}
+              onclick={handleDone}
+              class="pilgrim-flow__done"
+            ></lightning-button>
+          </template>
         </template>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { createElement } from "lwc";
+import { createElement } from "@lwc/engine-dom";
 import PilgrimFlow from "c/pilgrimFlow";
 import PilgrimStep from "c/pilgrimStep";
 
@@ -71,10 +71,10 @@ describe("c-pilgrim-flow", () => {
     expect(steps[1].active).toBe(true);
   });
 
-  it("skips a hidden step during navigation", async () => {
+  it("skips a step with skip=true during navigation", async () => {
     const { flow, steps } = buildFlow([
       { label: "A", name: "a" },
-      { label: "B", name: "b", hidden: true },
+      { label: "B", name: "b", skip: true },
       { label: "C", name: "c" }
     ]);
     await flush();
@@ -116,7 +116,7 @@ describe("c-pilgrim-flow", () => {
     expect(handler.mock.calls[0][0].detail.flowData).toEqual({ foo: "bar" });
   });
 
-  it("merges pilgrimdatawrite events into the shared context", async () => {
+  it("merges pilgrimdatawrite key/value into the shared context", async () => {
     const { flow, steps } = buildFlow([{ label: "A", name: "a" }]);
     await flush();
 
@@ -132,6 +132,28 @@ describe("c-pilgrim-flow", () => {
     expect(flow.flowData).toEqual({ color: "red" });
   });
 
+  it("merges pilgrimdatawrite patch object into the shared context", async () => {
+    const { flow, steps } = buildFlow([{ label: "A", name: "a" }], {
+      data: { existing: 1 }
+    });
+    await flush();
+
+    steps[0].dispatchEvent(
+      new CustomEvent("pilgrimdatawrite", {
+        bubbles: true,
+        composed: true,
+        detail: { patch: { color: "blue", size: "large" } }
+      })
+    );
+    await flush();
+
+    expect(flow.flowData).toEqual({
+      existing: 1,
+      color: "blue",
+      size: "large"
+    });
+  });
+
   it("renders a progress indicator only when showProgress is set", async () => {
     const { flow } = buildFlow(
       [
@@ -145,5 +167,65 @@ describe("c-pilgrim-flow", () => {
     expect(
       flow.shadowRoot.querySelector("lightning-progress-indicator")
     ).not.toBeNull();
+  });
+
+  it("fires stepchange with name, index, and flowData on navigation", async () => {
+    const { flow } = buildFlow(
+      [
+        { label: "A", name: "a" },
+        { label: "B", name: "b" }
+      ],
+      { data: { x: 1 } }
+    );
+    await flush();
+
+    const handler = jest.fn();
+    flow.addEventListener("stepchange", handler);
+
+    button(flow, ".pilgrim-flow__next").click();
+    await flush();
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    const { detail } = handler.mock.calls[0][0];
+    expect(detail.name).toBe("b");
+    expect(detail.index).toBe(1);
+    expect(detail.flowData).toEqual({ x: 1 });
+  });
+
+  it("shows only Done (no Back or Next) when there is a single visible step", async () => {
+    const { flow } = buildFlow([{ label: "A", name: "a" }]);
+    await flush();
+
+    expect(button(flow, ".pilgrim-flow__done")).not.toBeNull();
+    expect(button(flow, ".pilgrim-flow__back")).toBeNull();
+    expect(button(flow, ".pilgrim-flow__next")).toBeNull();
+  });
+
+  it("shows no footer buttons when all steps are skipped", async () => {
+    const { flow } = buildFlow([
+      { label: "A", name: "a", skip: true },
+      { label: "B", name: "b", skip: true }
+    ]);
+    await flush();
+
+    expect(button(flow, ".pilgrim-flow__done")).toBeNull();
+    expect(button(flow, ".pilgrim-flow__back")).toBeNull();
+    expect(button(flow, ".pilgrim-flow__next")).toBeNull();
+  });
+
+  it("does not duplicate step registrations when the flow reconnects", async () => {
+    const flow = createElement("c-pilgrim-flow", { is: PilgrimFlow });
+    const step = makeStep({ label: "A", name: "a" });
+    flow.appendChild(step);
+    document.body.appendChild(flow);
+    await flush();
+
+    document.body.removeChild(flow);
+    document.body.appendChild(flow);
+    await flush();
+
+    // After reconnect the step re-registers; there should be exactly one active step
+    expect(step.active).toBe(true);
+    expect(button(flow, ".pilgrim-flow__done")).not.toBeNull();
   });
 });

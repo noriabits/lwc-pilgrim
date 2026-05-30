@@ -14,7 +14,7 @@ describe("c-pilgrim-step", () => {
     }
   });
 
-  it("dispatches a register event on connect", () => {
+  it("dispatches a register event with a POJO descriptor on connect", () => {
     const element = createStep({ label: "One", name: "one" });
     const handler = jest.fn();
     document.body.addEventListener("pilgrimstepregister", handler);
@@ -23,13 +23,33 @@ describe("c-pilgrim-step", () => {
 
     expect(handler).toHaveBeenCalledTimes(1);
     const { detail } = handler.mock.calls[0][0];
-    // Compare name property (primitive) rather than the LWC proxy reference
-    // to avoid jest's deepCyclicCopy OOMing on the circular LWC element.
-    expect(detail.step.name).toBe("one");
+    expect(detail.step).toEqual({
+      uid: null,
+      name: "one",
+      label: "One",
+      valid: true,
+      skip: false
+    });
     expect(typeof detail.setActive).toBe("function");
   });
 
-  it("hides content when inactive and shows it when active", () => {
+  it("hides content when inactive and shows it when active via setActive callback", () => {
+    const element = createStep({ name: "one" });
+    const handler = jest.fn();
+    document.body.addEventListener("pilgrimstepregister", handler);
+    document.body.appendChild(element);
+
+    const container = element.shadowRoot.querySelector("div");
+    expect(container.className).toContain("slds-hide");
+
+    const { setActive } = handler.mock.calls[0][0].detail;
+    setActive(true);
+    return Promise.resolve().then(() => {
+      expect(container.className).not.toContain("slds-hide");
+    });
+  });
+
+  it("hides content when inactive and shows it when active via @api setter", () => {
     const element = createStep({ name: "one" });
     document.body.appendChild(element);
 
@@ -54,16 +74,30 @@ describe("c-pilgrim-step", () => {
     expect(handler.mock.calls[0][0].detail.valid).toBe(false);
   });
 
-  it("emits a visibility event when hidden changes", () => {
+  it("emits a visibility event when skip changes", () => {
     const element = createStep({ name: "one" });
     document.body.appendChild(element);
 
     const handler = jest.fn();
     document.body.addEventListener("pilgrimstepvisibility", handler);
-    element.hidden = true;
+    element.skip = true;
 
     expect(handler).toHaveBeenCalledTimes(1);
-    expect(handler.mock.calls[0][0].detail.hidden).toBe(true);
+    expect(handler.mock.calls[0][0].detail.skip).toBe(true);
+  });
+
+  it("does not emit validity/visibility events before connectedCallback", () => {
+    const element = createStep({ name: "one" });
+    const validHandler = jest.fn();
+    const visibilityHandler = jest.fn();
+    document.body.addEventListener("pilgrimstepvalidity", validHandler);
+    document.body.addEventListener("pilgrimstepvisibility", visibilityHandler);
+
+    element.valid = false;
+    element.skip = true;
+
+    expect(validHandler).not.toHaveBeenCalled();
+    expect(visibilityHandler).not.toHaveBeenCalled();
   });
 
   it("dispatches an unregister event on disconnect", () => {
@@ -71,8 +105,7 @@ describe("c-pilgrim-step", () => {
     document.body.appendChild(element);
 
     // Listen on the element itself: events dispatched during disconnectedCallback
-    // don't bubble to ancestors (element is already removed), but they still fire
-    // on the element (target phase).
+    // don't bubble to ancestors (element is already removed from DOM).
     const handler = jest.fn();
     element.addEventListener("pilgrimstepunregister", handler);
     document.body.removeChild(element);

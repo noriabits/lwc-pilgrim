@@ -1,25 +1,15 @@
 import { LightningElement, api, track } from "lwc";
+import labelBack from "@salesforce/label/c.PilgrimFlowBack";
+import labelNext from "@salesforce/label/c.PilgrimFlowNext";
+import labelDone from "@salesforce/label/c.PilgrimFlowDone";
 
-/**
- * @class PilgrimFlow
- * @extends LightningElement
- *
- * @classdesc
- * A reusable, pilgrim flow. Implementors compose a wizard by
- * nesting `c-pilgrim-step` children (each holding their own content) and the
- * flow handles navigation (Back / Next / Done), an optional progress indicator,
- * per-step validation gating, and conditional (skippable) steps.
- *
- * The flow owns a shared context object (`flowData`). Descendants report changes
- * up via a bubbling `pilgrimdatawrite` event; the flow merges and re-emits it.
- */
 export default class PilgrimFlow extends LightningElement {
   // --- public configuration ---
   @api showProgress = false;
   @api progressType = "base"; // 'base' | 'path'
-  @api backLabel = "Back";
-  @api nextLabel = "Next";
-  @api doneLabel = "Done";
+  @api backLabel = labelBack;
+  @api nextLabel = labelNext;
+  @api doneLabel = labelDone;
 
   /** Seeds the shared context. */
   @api
@@ -30,7 +20,7 @@ export default class PilgrimFlow extends LightningElement {
     this._flowData = value ? { ...value } : {};
   }
 
-  /** Read access to the current shared context snapshot (plain object). */
+  /** Read-only snapshot of the current shared context. */
   @api
   get flowData() {
     return { ...this._flowData };
@@ -38,37 +28,35 @@ export default class PilgrimFlow extends LightningElement {
 
   @track _flowData = {};
 
-  // ordered registry of every registered step (visible or not)
-  _steps = [];
+  // Array of step descriptor POJOs — @track gives deep reactivity to pojo mutations
+  @track _steps = [];
   _stepSeq = 0;
 
-  // identity (uid) of the currently active step
   @track _activeUid;
 
-  // reactive bump so getters recompute when the registry/visibility changes
-  @track _version = 0;
-
   connectedCallback() {
-    this.addEventListener(
-      "pilgrimstepregister",
-      this.handleStepRegister.bind(this)
-    );
-    this.addEventListener(
-      "pilgrimstepunregister",
-      this.handleStepUnregister.bind(this)
-    );
-    this.addEventListener(
-      "pilgrimstepvalidity",
-      this.handleStepValidity.bind(this)
-    );
-    this.addEventListener(
-      "pilgrimstepvisibility",
-      this.handleStepVisibility.bind(this)
-    );
-    this.addEventListener(
-      "pilgrimdatawrite",
-      this.handleFlowDataChange.bind(this)
-    );
+    this._onRegister = this.handleStepRegister.bind(this);
+    this._onUnregister = this.handleStepUnregister.bind(this);
+    this._onValidity = this.handleStepValidity.bind(this);
+    this._onVisibility = this.handleStepVisibility.bind(this);
+    this._onDataWrite = this.handleFlowDataChange.bind(this);
+    this.addEventListener("pilgrimstepregister", this._onRegister);
+    this.addEventListener("pilgrimstepunregister", this._onUnregister);
+    this.addEventListener("pilgrimstepvalidity", this._onValidity);
+    this.addEventListener("pilgrimstepvisibility", this._onVisibility);
+    this.addEventListener("pilgrimdatawrite", this._onDataWrite);
+  }
+
+  disconnectedCallback() {
+    this.removeEventListener("pilgrimstepregister", this._onRegister);
+    this.removeEventListener("pilgrimstepunregister", this._onUnregister);
+    this.removeEventListener("pilgrimstepvalidity", this._onValidity);
+    this.removeEventListener("pilgrimstepvisibility", this._onVisibility);
+    this.removeEventListener("pilgrimdatawrite", this._onDataWrite);
+    // Child steps also disconnect and lose their uid; reset so they re-register cleanly on reconnect.
+    this._steps = [];
+    this._stepSeq = 0;
+    this._activeUid = undefined;
   }
 
   // --- registry handling ---
@@ -84,33 +72,40 @@ export default class PilgrimFlow extends LightningElement {
     } else {
       this.syncActiveStates();
     }
-    this.bump();
   }
 
   handleStepUnregister(event) {
     event.stopPropagation();
-    const { step } = event.detail;
-    const wasActive = step.uid === this._activeUid;
-    this._steps = this._steps.filter((s) => s.uid !== step.uid);
+    const { uid } = event.detail;
+    const wasActive = uid === this._activeUid;
+    this._steps = this._steps.filter((s) => s.uid !== uid);
     if (wasActive) {
       this.activateStep(this.firstVisibleStep);
     }
-    this.bump();
   }
 
-  handleStepValidity() {
-    this.bump();
+  handleStepValidity(event) {
+    event.stopPropagation();
+    const { uid, valid } = event.detail;
+    const step = this._steps.find((s) => s.uid === uid);
+    if (step) {
+      step.valid = valid;
+    }
   }
 
-  handleStepVisibility() {
-    // If the active step just became hidden, fall back to the first visible one.
+  handleStepVisibility(event) {
+    event.stopPropagation();
+    const { uid, skip } = event.detail;
+    const step = this._steps.find((s) => s.uid === uid);
+    if (step) {
+      step.skip = skip;
+    }
     const active = this.activeStep;
-    if (!active || active.hidden) {
+    if (!active || active.skip) {
       this.activateStep(this.firstVisibleStep);
     } else {
       this.syncActiveStates();
     }
-    this.bump();
   }
 
   handleFlowDataChange(event) {
@@ -124,9 +119,7 @@ export default class PilgrimFlow extends LightningElement {
   // --- derived state ---
 
   get visibleSteps() {
-    // eslint-disable-next-line no-unused-expressions
-    this._version; // reactive dependency
-    return this._steps.filter((s) => !s.hidden);
+    return this._steps.filter((s) => !s.skip);
   }
 
   get firstVisibleStep() {
@@ -150,6 +143,11 @@ export default class PilgrimFlow extends LightningElement {
 
   get currentStepValue() {
     return this._activeUid;
+  }
+
+  get activeStepLabel() {
+    const active = this.activeStep;
+    return active ? active.label : "";
   }
 
   get isFirst() {
@@ -177,8 +175,8 @@ export default class PilgrimFlow extends LightningElement {
     return !this.isLast && this.visibleSteps.length > 0;
   }
 
-  get showDone() {
-    return this.isLast && this.visibleSteps.length > 0;
+  get showFooterActions() {
+    return this.visibleSteps.length > 0;
   }
 
   // --- navigation ---
@@ -214,6 +212,7 @@ export default class PilgrimFlow extends LightningElement {
   // --- helpers ---
 
   activateStep(step) {
+    const isNavigation = this._activeUid != null;
     this._activeUid = step ? step.uid : null;
     this.syncActiveStates();
     if (step) {
@@ -226,16 +225,18 @@ export default class PilgrimFlow extends LightningElement {
           }
         })
       );
+      if (isNavigation) {
+        // Move keyboard focus into the new step's region after the render cycle
+        Promise.resolve().then(() => {
+          this.template?.querySelector(".pilgrim-flow__body")?.focus();
+        });
+      }
     }
   }
 
   syncActiveStates() {
     this._steps.forEach((s) => {
-      if (typeof s.setActive === "function") {
-        s.setActive(s.uid === this._activeUid);
-      } else {
-        s.active = s.uid === this._activeUid;
-      }
+      s.setActive(s.uid === this._activeUid);
     });
   }
 
@@ -245,9 +246,5 @@ export default class PilgrimFlow extends LightningElement {
         detail: { flowData: { ...this._flowData } }
       })
     );
-  }
-
-  bump() {
-    this._version++;
   }
 }

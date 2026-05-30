@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">
+    <labels>
+        <fullName>PilgrimFlowBack</fullName>
+        <categories>PilgrimFlow</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Back button label</shortDescription>
+        <value>Back</value>
+    </labels>
+    <labels>
+        <fullName>PilgrimFlowNext</fullName>
+        <categories>PilgrimFlow</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Next button label</shortDescription>
+        <value>Next</value>
+    </labels>
+    <labels>
+        <fullName>PilgrimFlowDone</fullName>
+        <categories>PilgrimFlow</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Done button label (last step)</shortDescription>
+        <value>Done</value>
+    </labels>
+</CustomLabels>
