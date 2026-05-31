@@ -1,0 +1,22 @@
+<template>
+  <div class="slds-text-heading_small slds-p-bottom_small">Contact details</div>
+  <lightning-input
+    label="Full name"
+    data-key="fullName"
+    onchange={handleChange}
+    required
+  ></lightning-input>
+  <lightning-input
+    type="email"
+    label="Email"
+    data-key="email"
+    onchange={handleChange}
+    required
+  ></lightning-input>
+  <lightning-input
+    type="checkbox"
+    label="Needs a billing account"
+    data-key="needsBilling"
+    onchange={handleChange}
+  ></lightning-input>
+</template>

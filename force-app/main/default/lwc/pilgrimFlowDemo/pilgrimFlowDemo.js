@@ -43,7 +43,7 @@ export default class PilgrimFlowDemo extends LightningElement {
     return option ? option.label : "—";
   }
 
-  // --- uncontrolled inputs report up into the host's copy of the data ---
+  // --- billing combobox writes directly; contact data arrives via pilgrimdatachange ---
   handleField(event) {
     const key = event.target.dataset.key;
     const value =
