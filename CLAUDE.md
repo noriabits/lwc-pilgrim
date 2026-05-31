@@ -60,15 +60,14 @@ Owns the ordered step registry, active index, shared `flowData` context, and ren
 
 **Public `@api` props:**
 
-| Prop            | Type            | Default  | Description                                                                  |
-| --------------- | --------------- | -------- | ---------------------------------------------------------------------------- |
-| `show-progress` | Boolean         | `false`  | Renders `lightning-progress-indicator` above the step body.                  |
-| `progress-type` | String          | `'base'` | `'base'` or `'path'` — maps to `lightning-progress-indicator type`.          |
-| `back-label`    | String          | `'Back'` | Label for the Back button.                                                   |
-| `next-label`    | String          | `'Next'` | Label for the Next button.                                                   |
-| `done-label`    | String          | `'Done'` | Label for the Done button (shown on last visible step).                      |
-| `data`          | Object          | `{}`     | Seeds the shared context (`flowData`).                                       |
-| `flowData`      | Object (getter) | —        | Read-only snapshot of current shared context. Returns a plain `{ ...copy }`. |
+| Prop            | Type            | Default  | Description                                                                             |
+| --------------- | --------------- | -------- | --------------------------------------------------------------------------------------- |
+| `progress-type` | String          | `'none'` | `'none'` (hidden), `'base'`, or `'path'` — maps to `lightning-progress-indicator type`. |
+| `back-label`    | String          | `'Back'` | Label for the Back button.                                                              |
+| `next-label`    | String          | `'Next'` | Label for the Next button.                                                              |
+| `done-label`    | String          | `'Done'` | Label for the Done button (shown on last visible step).                                 |
+| `data`          | Object          | `{}`     | Seeds the shared context (`flowData`).                                                  |
+| `flowData`      | Object (getter) | —        | Read-only snapshot of current shared context. Returns a plain `{ ...copy }`.            |
 
 **Events emitted to the host:**
 

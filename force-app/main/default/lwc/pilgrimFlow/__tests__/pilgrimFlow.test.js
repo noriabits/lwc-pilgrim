@@ -154,13 +154,25 @@ describe("c-pilgrim-flow", () => {
     });
   });
 
-  it("renders a progress indicator only when showProgress is set", async () => {
+  it("does not render a progress indicator by default (progressType none)", async () => {
+    const { flow } = buildFlow([
+      { label: "A", name: "a" },
+      { label: "B", name: "b" }
+    ]);
+    await flush();
+
+    expect(
+      flow.shadowRoot.querySelector("lightning-progress-indicator")
+    ).toBeNull();
+  });
+
+  it("renders a progress indicator when progressType is base or path", async () => {
     const { flow } = buildFlow(
       [
         { label: "A", name: "a" },
         { label: "B", name: "b" }
       ],
-      { showProgress: true }
+      { progressType: "base" }
     );
     await flush();
 

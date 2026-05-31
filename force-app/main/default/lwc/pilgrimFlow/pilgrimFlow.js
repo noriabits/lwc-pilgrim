@@ -5,11 +5,14 @@ import labelDone from "@salesforce/label/c.PilgrimFlowDone";
 
 export default class PilgrimFlow extends LightningElement {
   // --- public configuration ---
-  @api showProgress = false;
-  @api progressType = "base"; // 'base' | 'path'
+  @api progressType = "none"; // 'none' | 'base' | 'path'
   @api backLabel = labelBack;
   @api nextLabel = labelNext;
   @api doneLabel = labelDone;
+
+  get showProgress() {
+    return this.progressType !== "none";
+  }
 
   /** Seeds the shared context. */
   @api
