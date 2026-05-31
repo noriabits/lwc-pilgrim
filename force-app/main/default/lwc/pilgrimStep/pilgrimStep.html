@@ -1,5 +1,23 @@
 <template>
   <div class={containerClass}>
-    <slot></slot>
+    <template lwc:if={loading}>
+      <div class="slds-align_absolute-center pilgrim-step__loading">
+        <div class="pilgrim-step__spinner-wrap">
+          <lightning-spinner
+            alternative-text={loadingText}
+            size="medium"
+            variant="brand"
+          ></lightning-spinner>
+        </div>
+        <template lwc:if={loadingText}>
+          <p class="slds-text-body_regular slds-text-color_weak">
+            {loadingText}
+          </p>
+        </template>
+      </div>
+    </template>
+    <template lwc:else>
+      <slot></slot>
+    </template>
   </div>
 </template>

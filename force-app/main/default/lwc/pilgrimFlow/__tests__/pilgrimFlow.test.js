@@ -213,6 +213,22 @@ describe("c-pilgrim-flow", () => {
     expect(button(flow, ".pilgrim-flow__next")).toBeNull();
   });
 
+  it("disables Next while the active step is loading, re-enables when done", async () => {
+    const { flow, steps } = buildFlow([
+      { label: "A", name: "a" },
+      { label: "B", name: "b" }
+    ]);
+    await flush();
+
+    steps[0].loading = true;
+    await flush();
+    expect(button(flow, ".pilgrim-flow__next").disabled).toBe(true);
+
+    steps[0].loading = false;
+    await flush();
+    expect(button(flow, ".pilgrim-flow__next").disabled).toBe(false);
+  });
+
   it("does not duplicate step registrations when the flow reconnects", async () => {
     const flow = createElement("c-pilgrim-flow", { is: PilgrimFlow });
     const step = makeStep({ label: "A", name: "a" });

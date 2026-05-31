@@ -39,11 +39,13 @@ export default class PilgrimFlow extends LightningElement {
     this._onUnregister = this.handleStepUnregister.bind(this);
     this._onValidity = this.handleStepValidity.bind(this);
     this._onVisibility = this.handleStepVisibility.bind(this);
+    this._onBusy = this.handleStepBusy.bind(this);
     this._onDataWrite = this.handleFlowDataChange.bind(this);
     this.addEventListener("pilgrimstepregister", this._onRegister);
     this.addEventListener("pilgrimstepunregister", this._onUnregister);
     this.addEventListener("pilgrimstepvalidity", this._onValidity);
     this.addEventListener("pilgrimstepvisibility", this._onVisibility);
+    this.addEventListener("pilgrimstepbusy", this._onBusy);
     this.addEventListener("pilgrimdatawrite", this._onDataWrite);
   }
 
@@ -52,6 +54,7 @@ export default class PilgrimFlow extends LightningElement {
     this.removeEventListener("pilgrimstepunregister", this._onUnregister);
     this.removeEventListener("pilgrimstepvalidity", this._onValidity);
     this.removeEventListener("pilgrimstepvisibility", this._onVisibility);
+    this.removeEventListener("pilgrimstepbusy", this._onBusy);
     this.removeEventListener("pilgrimdatawrite", this._onDataWrite);
     // Child steps also disconnect and lose their uid; reset so they re-register cleanly on reconnect.
     this._steps = [];
@@ -63,10 +66,10 @@ export default class PilgrimFlow extends LightningElement {
 
   handleStepRegister(event) {
     event.stopPropagation();
-    const { step, setActive } = event.detail;
-    step.uid = `step-${this._stepSeq++}`;
-    step.setActive = setActive;
-    this._steps = [...this._steps, step];
+    const { step, setActive, setUid } = event.detail;
+    const uid = `step-${this._stepSeq++}`;
+    setUid(uid);
+    this._steps = [...this._steps, { ...step, uid, setActive }];
     if (!this._activeUid) {
       this.activateStep(this.firstVisibleStep);
     } else {
@@ -87,25 +90,31 @@ export default class PilgrimFlow extends LightningElement {
   handleStepValidity(event) {
     event.stopPropagation();
     const { uid, valid } = event.detail;
-    const step = this._steps.find((s) => s.uid === uid);
-    if (step) {
-      step.valid = valid;
-    }
+    this._steps = this._steps.map((s) => {
+      return s.uid === uid ? { ...s, valid } : s;
+    });
   }
 
   handleStepVisibility(event) {
     event.stopPropagation();
     const { uid, skip } = event.detail;
-    const step = this._steps.find((s) => s.uid === uid);
-    if (step) {
-      step.skip = skip;
-    }
+    this._steps = this._steps.map((s) => {
+      return s.uid === uid ? { ...s, skip } : s;
+    });
     const active = this.activeStep;
     if (!active || active.skip) {
       this.activateStep(this.firstVisibleStep);
     } else {
       this.syncActiveStates();
     }
+  }
+
+  handleStepBusy(event) {
+    event.stopPropagation();
+    const { uid, loading } = event.detail;
+    this._steps = this._steps.map((s) => {
+      return s.uid === uid ? { ...s, loading } : s;
+    });
   }
 
   handleFlowDataChange(event) {
@@ -160,7 +169,7 @@ export default class PilgrimFlow extends LightningElement {
 
   get activeStepValid() {
     const active = this.activeStep;
-    return !active || active.valid !== false;
+    return !active || (active.valid !== false && active.loading !== true);
   }
 
   get nextDisabled() {

@@ -3,6 +3,7 @@ import { LightningElement, api, track } from "lwc";
 export default class PilgrimStep extends LightningElement {
   @api label;
   @api name;
+  @api loadingText;
 
   _valid = true;
 
@@ -27,6 +28,18 @@ export default class PilgrimStep extends LightningElement {
     this.notifyVisibility();
   }
 
+  _loading = false;
+
+  /** When `true` shows a spinner instead of the slot and blocks Next/Done in the flow. */
+  @api
+  get loading() {
+    return this._loading;
+  }
+  set loading(value) {
+    this._loading = value === true || value === "true";
+    this.notifyBusy();
+  }
+
   // @track so the setActive callback (which bypasses the @api setter) triggers re-renders
   @track _active = false;
 
@@ -48,7 +61,8 @@ export default class PilgrimStep extends LightningElement {
       name: this.name,
       label: this.label,
       valid: this._valid,
-      skip: this._skip
+      skip: this._skip,
+      loading: this._loading
     };
     this.dispatchEvent(
       new CustomEvent("pilgrimstepregister", {
@@ -58,6 +72,11 @@ export default class PilgrimStep extends LightningElement {
           step: this._descriptor,
           setActive: (isActive) => {
             this._active = isActive === true;
+          },
+          // LWS freezes event detail objects across component boundaries, so the
+          // flow cannot write back to _descriptor directly. Use a callback instead.
+          setUid: (uid) => {
+            this._descriptor.uid = uid;
           }
         }
       })
@@ -92,6 +111,17 @@ export default class PilgrimStep extends LightningElement {
         bubbles: true,
         composed: true,
         detail: { uid: this._descriptor.uid, skip: this._skip }
+      })
+    );
+  }
+
+  notifyBusy() {
+    if (!this._descriptor) return;
+    this.dispatchEvent(
+      new CustomEvent("pilgrimstepbusy", {
+        bubbles: true,
+        composed: true,
+        detail: { uid: this._descriptor.uid, loading: this._loading }
       })
     );
   }

@@ -19,7 +19,8 @@ export default class PilgrimFlowDemo extends LightningElement {
     billingAccountId: ""
   };
 
-  billingOptions = BILLING_ACCOUNT_OPTIONS;
+  billingLoading = false;
+  billingOptions = [];
 
   // --- conditional step ---
   get skipBilling() {
@@ -53,8 +54,15 @@ export default class PilgrimFlowDemo extends LightningElement {
   }
 
   // --- flow events ---
-  handleStepChange() {
-    // Hook for hydrating the entering step from the shared context, if needed.
+  handleStepChange(event) {
+    if (event.detail.name === "billing") {
+      this.billingLoading = true;
+      // eslint-disable-next-line @lwc/lwc/no-async-operation
+      setTimeout(() => {
+        this.billingOptions = BILLING_ACCOUNT_OPTIONS;
+        this.billingLoading = false;
+      }, 1200);
+    }
   }
 
   handleFlowDataChange(event) {

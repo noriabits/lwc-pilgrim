@@ -28,9 +28,11 @@ describe("c-pilgrim-step", () => {
       name: "one",
       label: "One",
       valid: true,
-      skip: false
+      skip: false,
+      loading: false
     });
     expect(typeof detail.setActive).toBe("function");
+    expect(typeof detail.setUid).toBe("function");
   });
 
   it("hides content when inactive and shows it when active via setActive callback", () => {
@@ -111,5 +113,54 @@ describe("c-pilgrim-step", () => {
     document.body.removeChild(element);
 
     expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it("emits a pilgrimstepbusy event when loading changes", () => {
+    const element = createStep({ name: "one" });
+    document.body.appendChild(element);
+
+    const handler = jest.fn();
+    document.body.addEventListener("pilgrimstepbusy", handler);
+    element.loading = true;
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0][0].detail.loading).toBe(true);
+  });
+
+  it("shows a spinner and caption when loading is true, hides the slot", async () => {
+    const element = createStep({ name: "one", loadingText: "Loading..." });
+    document.body.appendChild(element);
+    element.active = true;
+    element.loading = true;
+
+    await Promise.resolve();
+
+    const spinner = element.shadowRoot.querySelector("lightning-spinner");
+    const slot = element.shadowRoot.querySelector("slot");
+    expect(spinner).not.toBeNull();
+    expect(slot).toBeNull();
+  });
+
+  it("shows the slot and no spinner when loading is false", async () => {
+    const element = createStep({ name: "one" });
+    document.body.appendChild(element);
+    element.active = true;
+
+    await Promise.resolve();
+
+    const spinner = element.shadowRoot.querySelector("lightning-spinner");
+    const slot = element.shadowRoot.querySelector("slot");
+    expect(spinner).toBeNull();
+    expect(slot).not.toBeNull();
+  });
+
+  it("does not emit pilgrimstepbusy before connectedCallback", () => {
+    const element = createStep({ name: "one" });
+    const handler = jest.fn();
+    document.body.addEventListener("pilgrimstepbusy", handler);
+
+    element.loading = true;
+
+    expect(handler).not.toHaveBeenCalled();
   });
 });

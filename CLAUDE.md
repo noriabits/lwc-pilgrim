@@ -6,7 +6,7 @@ A reusable, pilgrim-flow framework built in **vanilla LWC**. Implementors compos
 
 ```
 force-app/main/default/lwc/
-├── pilgrimFlow/            # Container/engine  (isExposed: true)
+├── pilgrimFlow/            # Container/engine  (isExposed: false)
 ├── pilgrimStep/            # Step wrapper       (isExposed: false)
 └── pilgrimFlowDemo/        # Working example    (isExposed: true)
 ```
@@ -28,22 +28,27 @@ Thin wrapper the implementor places around each screen's content. Registers itse
 
 **Public `@api` props:**
 
-| Prop     | Type    | Default | Description                                                                        |
-| -------- | ------- | ------- | ---------------------------------------------------------------------------------- |
-| `label`  | String  | —       | Text shown in the progress indicator.                                              |
-| `name`   | String  | —       | Stable key for navigation and `stepchange` events.                                 |
-| `valid`  | Boolean | `true`  | When `false`, blocks Next/Done on this step.                                       |
-| `skip`   | Boolean | `false` | When `true`, step is skipped in navigation and absent from the progress indicator. |
-| `active` | Boolean | `false` | Read-only in practice; set by the flow via `setActive()` callback.                 |
+| Prop          | Type    | Default | Description                                                                        |
+| ------------- | ------- | ------- | ---------------------------------------------------------------------------------- |
+| `label`       | String  | —       | Text shown in the progress indicator.                                              |
+| `name`        | String  | —       | Stable key for navigation and `stepchange` events.                                 |
+| `valid`       | Boolean | `true`  | When `false`, blocks Next/Done on this step.                                       |
+| `skip`        | Boolean | `false` | When `true`, step is skipped in navigation and absent from the progress indicator. |
+| `loading`     | Boolean | `false` | When `true`, shows a spinner instead of the slot and blocks Next/Done.             |
+| `loadingText` | String  | —       | Caption rendered beneath the spinner (e.g. `"Loading billing accounts..."`).       |
+| `active`      | Boolean | `false` | Read-only in practice; set by the flow via `setActive()` callback.                 |
 
 **Internal events dispatched** (bubbles + composed — consumed by `c-pilgrim-flow`, not the host):
 
-| Event                   | When                                                      |
-| ----------------------- | --------------------------------------------------------- |
-| `pilgrimstepregister`   | `connectedCallback` — detail: `{ step: POJO, setActive }` |
-| `pilgrimstepunregister` | `disconnectedCallback` — detail: `{ uid }`                |
-| `pilgrimstepvalidity`   | `valid` setter changes — detail: `{ uid, valid }`         |
-| `pilgrimstepvisibility` | `skip` setter changes — detail: `{ uid, skip }`           |
+| Event                   | When                                                              |
+| ----------------------- | ----------------------------------------------------------------- |
+| `pilgrimstepregister`   | `connectedCallback` — detail: `{ step: POJO, setActive, setUid }` |
+| `pilgrimstepunregister` | `disconnectedCallback` — detail: `{ uid }`                        |
+| `pilgrimstepvalidity`   | `valid` setter changes — detail: `{ uid, valid }`                 |
+| `pilgrimstepvisibility` | `skip` setter changes — detail: `{ uid, skip }`                   |
+| `pilgrimstepbusy`       | `loading` setter changes — detail: `{ uid, loading }`             |
+
+> **LWS constraint:** Lightning Web Security freezes/proxies event detail objects at cross-component boundaries, so the flow cannot write properties back to `_descriptor` directly (e.g. `step.uid = ...` silently no-ops). All write-back from flow → step must use the callback pattern (`setActive`, `setUid`). Never rely on mutating a POJO from `event.detail` to communicate back to the originating component.
 
 > **Note on unregister:** events dispatched during `disconnectedCallback` don't bubble to ancestors (element already removed from DOM). For v1 static-slot usage this is irrelevant; dynamic step removal is a v2 concern.
 
@@ -76,7 +81,8 @@ Owns the ordered step registry, active index, shared `flowData` context, and ren
 **Navigation rules:**
 
 - Back/Next/Done operate over `visibleSteps` (steps where `skip !== true`).
-- Next and Done are `disabled` while `activeStep.valid === false`.
+- Next and Done are `disabled` while `activeStep.valid === false` **or** `activeStep.loading === true`.
+- Back is unaffected by loading; users can always go back.
 - If the active step becomes `skip`, the flow falls back to the first visible step.
 
 ---
