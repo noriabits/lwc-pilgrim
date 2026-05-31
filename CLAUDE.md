@@ -138,7 +138,6 @@ When `valid` is `false` the Next/Done button is disabled.
 <!-- myFlow.html -->
 <template>
   <c-pilgrim-flow
-    show-progress
     progress-type="base"
     done-label="Submit"
     onstepchange="{handleStepChange}"
@@ -276,4 +275,4 @@ First run prompts to enable Local Dev in the org (one-time). Supports hot reload
 ## Dev instructions
 
 - Once a change is completed, suggest the commit message.
-- Update CLAUDE.md whenever is needed.
+- Update CLAUDE.md abd README.md whenever is needed.

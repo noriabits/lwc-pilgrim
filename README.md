@@ -8,18 +8,17 @@ A purposeful journey through stages. A reusable multi-step wizard framework buil
 
 ## Components
 
-| Component         | Tag                   | Role                                          |
-| ----------------- | --------------------- | --------------------------------------------- |
-| `pilgrimFlow`     | `c-pilgrim-flow`      | Container and engine. Exposed to App Builder. |
-| `pilgrimStep`     | `c-pilgrim-step`      | Step wrapper. Internal building block.        |
-| `pilgrimFlowDemo` | `c-pilgrim-flow-demo` | Working 3-step demo. Exposed to App Builder.  |
+| Component         | Tag                   | Role                                         |
+| ----------------- | --------------------- | -------------------------------------------- |
+| `pilgrimFlow`     | `c-pilgrim-flow`      | Container and engine.                        |
+| `pilgrimStep`     | `c-pilgrim-step`      | Step wrapper. Internal building block.       |
+| `pilgrimFlowDemo` | `c-pilgrim-flow-demo` | Working 3-step demo. Exposed to App Builder. |
 
 ## Quick start
 
 ```html
 <template>
   <c-pilgrim-flow
-    show-progress
     progress-type="base"
     done-label="Submit"
     onstepchange="{handleStepChange}"
@@ -40,7 +39,7 @@ A purposeful journey through stages. A reusable multi-step wizard framework buil
     <c-pilgrim-step
       label="Billing"
       name="billing"
-      hidden="{skipBilling}"
+      skip="{skipBilling}"
       valid="{billingValid}"
     >
       <lightning-combobox
@@ -62,15 +61,14 @@ A purposeful journey through stages. A reusable multi-step wizard framework buil
 
 ## `c-pilgrim-flow` props
 
-| Prop            | Type            | Default  | Description                                                 |
-| --------------- | --------------- | -------- | ----------------------------------------------------------- |
-| `show-progress` | Boolean         | `false`  | Renders `lightning-progress-indicator` above the step body. |
-| `progress-type` | String          | `'base'` | `'base'` or `'path'`.                                       |
-| `back-label`    | String          | `'Back'` | Back button label.                                          |
-| `next-label`    | String          | `'Next'` | Next button label.                                          |
-| `done-label`    | String          | `'Done'` | Done button label (last step).                              |
-| `data`          | Object          | `{}`     | Seeds the shared context.                                   |
-| `flowData`      | Object (getter) | —        | Read-only snapshot of the current shared context.           |
+| Prop            | Type            | Default  | Description                                                                             |
+| --------------- | --------------- | -------- | --------------------------------------------------------------------------------------- |
+| `progress-type` | String          | `'none'` | `'none'` (hidden), `'base'`, or `'path'` — maps to `lightning-progress-indicator type`. |
+| `back-label`    | String          | `'Back'` | Back button label.                                                                      |
+| `next-label`    | String          | `'Next'` | Next button label.                                                                      |
+| `done-label`    | String          | `'Done'` | Done button label (last step).                                                          |
+| `data`          | Object          | `{}`     | Seeds the shared context.                                                               |
+| `flowData`      | Object (getter) | —        | Read-only snapshot of the current shared context.                                       |
 
 ## `c-pilgrim-flow` events
 
@@ -82,12 +80,14 @@ A purposeful journey through stages. A reusable multi-step wizard framework buil
 
 ## `c-pilgrim-step` props
 
-| Prop     | Type    | Default | Description                            |
-| -------- | ------- | ------- | -------------------------------------- |
-| `label`  | String  | —       | Text in the progress indicator.        |
-| `name`   | String  | —       | Stable key for navigation and events.  |
-| `valid`  | Boolean | `true`  | When `false`, blocks Next/Done.        |
-| `hidden` | Boolean | `false` | When `true`, step is skipped entirely. |
+| Prop          | Type    | Default | Description                                                               |
+| ------------- | ------- | ------- | ------------------------------------------------------------------------- |
+| `label`       | String  | —       | Text in the progress indicator.                                           |
+| `name`        | String  | —       | Stable key for navigation and events.                                     |
+| `valid`       | Boolean | `true`  | When `false`, blocks Next/Done.                                           |
+| `skip`        | Boolean | `false` | When `true`, step is excluded from navigation and the progress indicator. |
+| `loading`     | Boolean | `false` | When `true`, shows a spinner and blocks Next/Done.                        |
+| `loadingText` | String  | —       | Caption beneath the spinner.                                              |
 
 ## Shared context
 
