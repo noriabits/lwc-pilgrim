@@ -10,13 +10,19 @@ import { BILLING_ACCOUNT_OPTIONS } from "./mockData";
  * A dummy "New Service Request" flow showing how to use `c-pilgrim-flow`:
  * declarative slotted steps, a host-owned shared context, per-step validation
  * gating, a conditional step, the progress indicator, and `oncomplete` handling.
+ *
+ * Both step child components extend `PilgrimStepBase` and write to the shared
+ * context via `pilgrimdatawrite` events. The host stays in sync by listening
+ * for `onpilgrimdatachange` from the flow.
  */
 export default class PilgrimFlowDemo extends LightningElement {
   @track data = {
     fullName: "",
     email: "",
     needsBilling: false,
-    billingAccountId: ""
+    billingAccountId: "",
+    billingAccountLabel: "",
+    poNumber: ""
   };
 
   billingLoading = false;
@@ -36,23 +42,6 @@ export default class PilgrimFlowDemo extends LightningElement {
     return this.skipBilling || Boolean(this.data.billingAccountId);
   }
 
-  get billingAccountLabel() {
-    const option = this.billingOptions.find(
-      (o) => o.value === this.data.billingAccountId
-    );
-    return option ? option.label : "—";
-  }
-
-  // --- billing combobox writes directly; contact data arrives via pilgrimdatachange ---
-  handleField(event) {
-    const key = event.target.dataset.key;
-    const value =
-      event.target.type === "checkbox"
-        ? event.target.checked
-        : event.target.value;
-    this.data = { ...this.data, [key]: value };
-  }
-
   // --- flow events ---
   handleStepChange(event) {
     if (event.detail.name === "billing") {
@@ -65,6 +54,8 @@ export default class PilgrimFlowDemo extends LightningElement {
     }
   }
 
+  // Both step components write via pilgrimdatawrite → the flow merges and fires
+  // pilgrimdatachange here, keeping this.data in sync for validity and review.
   handleFlowDataChange(event) {
     this.data = { ...this.data, ...event.detail.flowData };
   }

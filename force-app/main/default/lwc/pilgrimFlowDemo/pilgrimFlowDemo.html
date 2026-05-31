@@ -6,14 +6,20 @@
     onpilgrimdatachange={handleFlowDataChange}
     oncomplete={handleComplete}
   >
-    <!-- Step 1: always shown.
-         c-pilgrim-contact-form fires pilgrimdatawrite events; the flow merges
-         them and re-emits pilgrimdatachange to this host, which updates data. -->
+    <!-- Step 1: contact details.
+         pilgrimContactForm extends PilgrimStepBase without overriding anything —
+         the inherited handleChange covers all its inputs (text, email, checkbox).
+         Each field change bubbles up as a pilgrimdatawrite event, which the flow
+         merges and re-emits as pilgrimdatachange to this host. -->
     <c-pilgrim-step label="Contact" name="contact" valid={contactValid}>
       <c-pilgrim-contact-form></c-pilgrim-contact-form>
     </c-pilgrim-step>
 
-    <!-- Step 2: skipped unless the checkbox above is ticked -->
+    <!-- Step 2: skipped unless the checkbox above is ticked.
+         pilgrimBillingForm extends PilgrimStepBase and overrides handleChange for
+         the account combobox: it calls writeDataPatch to write the account ID and
+         its human-readable label together, so flowData is self-contained.
+         The PO number input delegates back to super.handleChange(). -->
     <c-pilgrim-step
       label="Billing"
       name="billing"
@@ -22,18 +28,15 @@
       loading={billingLoading}
       loading-text="Loading billing accounts..."
     >
-      <div class="slds-text-heading_small slds-p-bottom_small">Billing</div>
-      <lightning-combobox
-        label="Billing account"
-        value={data.billingAccountId}
+      <c-pilgrim-billing-form
         options={billingOptions}
-        data-key="billingAccountId"
-        onchange={handleField}
-        required
-      ></lightning-combobox>
+        value={data.billingAccountId}
+      ></c-pilgrim-billing-form>
     </c-pilgrim-step>
 
-    <!-- Step 3: read-only summary -->
+    <!-- Step 3: read-only summary — no child component needed, no dispatch.
+         billingAccountLabel comes from flowData directly (written by pilgrimBillingForm)
+         so no reverse-lookup getter is needed on the host. -->
     <c-pilgrim-step label="Review" name="review">
       <div class="slds-text-heading_small slds-p-bottom_small">Review</div>
       <dl class="slds-dl_horizontal">
@@ -42,7 +45,9 @@
         <dt class="slds-dl_horizontal__label">Email</dt>
         <dd class="slds-dl_horizontal__detail">{data.email}</dd>
         <dt class="slds-dl_horizontal__label">Billing account</dt>
-        <dd class="slds-dl_horizontal__detail">{billingAccountLabel}</dd>
+        <dd class="slds-dl_horizontal__detail">{data.billingAccountLabel}</dd>
+        <dt class="slds-dl_horizontal__label">PO number</dt>
+        <dd class="slds-dl_horizontal__detail">{data.poNumber}</dd>
       </dl>
     </c-pilgrim-step>
   </c-pilgrim-flow>

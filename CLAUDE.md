@@ -8,7 +8,10 @@ A reusable, pilgrim-flow framework built in **vanilla LWC**. Implementors compos
 force-app/main/default/lwc/
 ├── pilgrimFlow/            # Container/engine  (isExposed: false)
 ├── pilgrimStep/            # Step wrapper       (isExposed: false)
-└── pilgrimFlowDemo/        # Working example    (isExposed: true)
+├── pilgrimStepBase/        # Base class for step child components (isExposed: false)
+├── pilgrimFlowDemo/        # Working example    (isExposed: true)
+├── pilgrimContactForm/     # Demo step — extends PilgrimStepBase, no overrides
+└── pilgrimBillingForm/     # Demo step — extends PilgrimStepBase, overrides handleChange
 ```
 
 Salesforce DX project.
@@ -83,6 +86,44 @@ Owns the ordered step registry, active index, shared `flowData` context, and ren
 - Next and Done are `disabled` while `activeStep.valid === false` **or** `activeStep.loading === true`.
 - Back is unaffected by loading; users can always go back.
 - If the active step becomes `skip`, the flow falls back to the first visible step.
+
+---
+
+## Step child components
+
+Implementors create one LWC per step and slot it into `c-pilgrim-step`. Each component should extend `PilgrimStepBase` to get `writeData`, `writeDataPatch`, and a default `handleChange` for free.
+
+### `c-pilgrim-step-base` — base class for step components
+
+Provides three methods inherited by all step child components:
+
+| Method           | Signature      | Description                                                                                                                                                                                                                           |
+| ---------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `handleChange`   | `(event)`      | Default handler for `data-key` inputs (text, email, checkbox). Extracts key from `event.target.dataset.key` and value from `event.target.value` / `event.target.checked`. Override when the input fires `event.detail.value` instead. |
+| `writeData`      | `(key, value)` | Dispatches `pilgrimdatawrite` with `{ key, value }`.                                                                                                                                                                                  |
+| `writeDataPatch` | `(patch)`      | Dispatches `pilgrimdatawrite` with `{ patch }` — merges multiple keys at once.                                                                                                                                                        |
+
+**Common case — no override needed:**
+
+```js
+import PilgrimStepBase from "c/pilgrimStepBase";
+
+// handleChange, writeData, writeDataPatch all inherited.
+export default class MyStepForm extends PilgrimStepBase {}
+```
+
+**Override when the input fires `event.detail.value`** (e.g. `lightning-combobox`, `lightning-radio-group`):
+
+```js
+import PilgrimStepBase from "c/pilgrimStepBase";
+
+export default class MyPicklistForm extends PilgrimStepBase {
+  // writeData is still inherited — only value extraction changes.
+  handleChange(event) {
+    this.writeData("myField", event.detail.value);
+  }
+}
+```
 
 ---
 

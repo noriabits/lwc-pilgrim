@@ -1,18 +1,5 @@
-import { LightningElement } from "lwc";
+import PilgrimStepBase from "c/pilgrimStepBase";
 
-export default class PilgrimContactForm extends LightningElement {
-  handleChange(event) {
-    const key = event.target.dataset.key;
-    const value =
-      event.target.type === "checkbox"
-        ? event.target.checked
-        : event.target.value;
-    this.dispatchEvent(
-      new CustomEvent("pilgrimdatawrite", {
-        bubbles: true,
-        composed: true,
-        detail: { key, value }
-      })
-    );
-  }
-}
+// handleChange, writeData, and writeDataPatch are all inherited from PilgrimStepBase.
+// Standard data-key inputs (text, email, checkbox) need no additional code here.
+export default class PilgrimContactForm extends PilgrimStepBase {}
